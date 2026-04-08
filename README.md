@@ -113,7 +113,7 @@ public class UserCommandService extends AbstractCommandService {
    - Enforces auth (rejects before method runs if unauthorized)
    - Invokes the method with a populated `CommandContext`
 5. **Method executes** business logic and returns a `ResponseVO`
-6. **Response** is always HTTP 200 with a business `code` inside the body
+6. **Response** wrapped in `ResponseVO` envelope (code, message, response, responseAt)
 
 ### URL-to-Service mapping
 
@@ -254,19 +254,33 @@ Everything the method needs arrives in `CommandContext`: the payload, the user, 
 | **AI comprehension** | Must read controller + service + security config | Read ONE method, annotation tells everything |
 | **Adding new endpoint** | New URL + HTTP method + security rule + DTO | Add a method with `@CommandHandler` |
 | **Response format** | Varies (`ResponseEntity`, custom DTOs, exceptions) | Always `ResponseVO` (code, message, response) |
-| **HTTP status** | Varies (200, 201, 400, 404, 500...) | Always 200. Business code in response body. |
+| **HTTP status** | Varies (200, 201, 400, 404, 500...) | Consistent `ResponseVO` envelope — HTTP strategy is your choice |
 
-### Why always HTTP 200?
+### HTTP Status Strategy: Your Choice
 
-HTTP status codes are transport-level concerns. "User not found" is not a transport error -- it is a business logic result. By always returning HTTP 200, the transport layer and business layer are cleanly separated. Clients check `response.code`, not the HTTP status.
+The CommandHandler pattern does not prescribe a specific HTTP status strategy. You can choose what works best for your project:
 
+**Option A: Business code in body (HTTP always 200)**
 ```json
-// Success
+// HTTP 200
 { "code": 200, "message": "Success", "response": { "uid": "123", "nickname": "Alice" }, "responseAt": 1712345678 }
 
-// Business error (still HTTP 200)
+// HTTP 200 — business error in code field
 { "code": 404, "message": "User not found", "response": null, "responseAt": 1712345678 }
 ```
+
+**Option B: HTTP status codes with custom semantics**
+```
+HTTP 200 — Success
+HTTP 401 — Authentication required
+HTTP 409 — Token refresh required (e.g., OAuth refresh)
+HTTP 410 — Database error
+HTTP 411 — Service error
+```
+
+**Option C: Hybrid** — HTTP 200 for business results, HTTP error codes for infrastructure/auth concerns.
+
+The pattern's value is in the **dispatch and auth guarantee**, not in the HTTP strategy. Pick what your team (and your AI) finds most readable.
 
 ---
 

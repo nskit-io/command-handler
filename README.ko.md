@@ -110,7 +110,7 @@ public class UserCommandService extends AbstractCommandService {
    - 인증 적용 (미인증 시 메서드 실행 전 거부)
    - `CommandContext`를 채워서 메서드 호출
 5. **메서드 실행** -- 비즈니스 로직 처리 후 `ResponseVO` 반환
-6. **응답**은 항상 HTTP 200, 비즈니스 `code`는 바디 내부
+6. **응답**은 `ResponseVO` 엔벨로프로 래핑 (code, message, response, responseAt)
 
 ---
 
@@ -226,7 +226,7 @@ AI가 한 번 배우면 모든 모듈, 모든 프로젝트에 적용합니다.
 | **AI 이해도** | 컨트롤러 + 서비스 + 보안 설정 읽어야 함 | 메서드 하나 읽으면 어노테이션이 모든 것을 알려줌 |
 | **새 엔드포인트 추가** | 새 URL + HTTP 메서드 + 보안 규칙 + DTO | `@CommandHandler` 메서드 추가 |
 | **응답 형식** | 다양함 (`ResponseEntity`, 커스텀 DTO, 예외) | 항상 `ResponseVO` (code, message, response) |
-| **HTTP 상태** | 다양함 (200, 201, 400, 404, 500...) | 항상 200. 비즈니스 코드는 응답 바디 안에. |
+| **HTTP 상태** | 다양함 (200, 201, 400, 404, 500...) | 일관된 `ResponseVO` 엔벨로프 — HTTP 전략은 자유 |
 
 ---
 
