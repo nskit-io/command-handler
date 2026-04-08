@@ -135,14 +135,32 @@ public ResponseVO getProfile(CommandContext ctx) {
 **레벨 2: 게스트 허용**
 ```java
 @CommandHandler(allowGuest = true)  // needAuth=true, allowGuest=true
-public ResponseVO getPublicInfo(CommandContext ctx) {
-    // ctx.getUser()가 null일 수 있음.
-    // 유효한 토큰은 필요하지만, 게스트 토큰도 허용.
-    if (ctx.getUser() != null) {
-        // 인증된 회원에 대한 개인화
+public ResponseVO getProductDetail(CommandContext ctx) {
+    // 게스트 토큰은 필수 (완전 공개 아님), 회원 로그인은 선택.
+    // 게스트면 ctx.getUser()는 null, 로그인 회원이면 존재.
+    
+    JsonObject payload = ctx.getFirstCommandPayload();
+    Product product = productService.getDetail(payload.get("productId").getAsString());
+    
+    // 기본 응답: 모든 사용자에게 제공 (게스트 + 회원)
+    Map<String, Object> result = new HashMap<>();
+    result.put("product", product);
+    
+    // payload에 uid가 있으면, DB 조회 후 개인화 데이터 append
+    String uid = payload.has("uid") ? payload.get("uid").getAsString() : null;
+    if (uid != null) {
+        UserVO user = userService.getUserByUid(uid);
+        if (user != null) {
+            result.put("liked", likeService.isLiked(uid, product.getId()));
+            result.put("recentView", viewService.getRecent(uid));
+        }
     }
+    
+    return ResponseHelper.response(200, "Success", result);
 }
 ```
+
+패턴: **기본 응답은 모든 사용자에게 제공하고, payload에 uid가 포함되면 DB 조회 후 사용자별 데이터를 append.** 로그인 없이 탐색은 가능하면서, 알려진 사용자에게는 풍부한 경험을 제공합니다.
 
 **레벨 3: 공개**
 ```java

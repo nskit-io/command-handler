@@ -163,14 +163,32 @@ public ResponseVO getProfile(CommandContext ctx) {
 **Level 2: Guest-allowed**
 ```java
 @CommandHandler(allowGuest = true)  // needAuth=true, allowGuest=true
-public ResponseVO getPublicInfo(CommandContext ctx) {
-    // ctx.getUser() MAY be null.
-    // A valid token is required, but it can be a guest token.
-    if (ctx.getUser() != null) {
-        // personalize for authenticated member
+public ResponseVO getProductDetail(CommandContext ctx) {
+    // A guest token is REQUIRED (not fully public), but member login is optional.
+    // ctx.getUser() is null for guests, present for logged-in members.
+    
+    JsonObject payload = ctx.getFirstCommandPayload();
+    Product product = productService.getDetail(payload.get("productId").getAsString());
+    
+    // Base response: available to all (guest + member)
+    Map<String, Object> result = new HashMap<>();
+    result.put("product", product);
+    
+    // If user info is available (via payload uid), append personalized data
+    String uid = payload.has("uid") ? payload.get("uid").getAsString() : null;
+    if (uid != null) {
+        UserVO user = userService.getUserByUid(uid);
+        if (user != null) {
+            result.put("liked", likeService.isLiked(uid, product.getId()));
+            result.put("recentView", viewService.getRecent(uid));
+        }
     }
+    
+    return ResponseHelper.response(200, "Success", result);
 }
 ```
+
+The pattern: **base response for everyone, then append user-specific data if uid is provided in the payload.** This avoids requiring login for browsing while still enriching the experience for known users.
 
 **Level 3: Public**
 ```java
