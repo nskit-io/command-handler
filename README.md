@@ -1,8 +1,10 @@
-[한국어](README.ko.md)
+[🇰🇷 한국어](README.ko.md) · [🇯🇵 日本語](README.ja.md) · [🇨🇳 中文](README.zh.md)
 
 # CommandHandler
 
 **What if your API method name WAS the API spec?**
+
+> Used by [**NSKit**](https://github.com/nskit-io/nskit-io) — *bound by structure, free to combine.* A production web-app platform where CommandHandler backs every B2B service in operation (GosuSchool, NewMyoung, Prism, Chicver, Haru, BigFoot).
 
 > One module = one service class. One command = one method. The method name IS the API spec.
 

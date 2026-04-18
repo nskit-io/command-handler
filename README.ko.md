@@ -1,8 +1,10 @@
-[English](README.md)
+[🇬🇧 English](README.md) · [🇯🇵 日本語](README.ja.md) · [🇨🇳 中文](README.zh.md)
 
 # CommandHandler
 
 **API 메서드 이름이 곧 API 스펙이라면?**
+
+> [**NSKit**](https://github.com/nskit-io/nskit-io) 프로덕션 서비스의 백엔드 패턴 — *갇혀 있어서 무한 조합*. 운영 중인 모든 B2B 서비스(GosuSchool, NewMyoung, Prism, Chicver, Haru, BigFoot)가 이 패턴으로 돌아갑니다.
 
 > 모듈 1개 = 서비스 클래스 1개. 커맨드 1개 = 메서드 1개. 메서드 이름이 곧 API 스펙.
 
