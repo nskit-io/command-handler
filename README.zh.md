@@ -6,7 +6,7 @@
 
 > 一个模块 = 一个服务类。一条命令 = 一个方法。方法名即 API 规范。
 
-> 用于 [**NSKit**](https://github.com/nskit-io/nskit-io) 生产服务 — *有结构,才有无限组合*。所有运行中的 B2B 服务(GosuSchool、NewMyoung、Prism、Chicver、Haru、BigFoot)都采用此模式。
+> 用于 [**NSKit**](https://github.com/nskit-io/nskit-io) 生产服务 — *有结构,才有无限组合*。所有运行中的 NSKit 服务(NewMyoung、Pellow、Byeol、SING:ON、BigFoot 等)都采用此模式。
 
 ---
 
@@ -44,15 +44,16 @@ public class UserController {
 ## CommandHandler 的解法
 
 ```java
-@CommandHandler(module = "user")
-public class UserCommandService {
+public class UserCommandService extends AbstractCommandService {
 
+    @CommandHandler  // needAuth=true, allowGuest=false
     public ResponseVO getProfile(CommandContext ctx) throws HandledServiceException {
-        String uid = ctx.getFirstCommandPayload().get("uid").getAsString();
+        String uid = ctx.getUser().getUid();  // 身份来自认证令牌,而不是 payload
         // ...
         return ResponseHelper.response(200, "Success", profile);
     }
 
+    @CommandHandler
     public ResponseVO updateProfile(CommandContext ctx) throws HandledServiceException {
         // ...
     }
@@ -70,7 +71,7 @@ URL 只有一条:`POST /api/v1/user`。payload 中的 `command` 字段决定调�
 ```
 Frontend (nskit-api.js)
   └→ POST /api/v1/{module}
-         payload: { command: "getProfile", payload: {...} }
+         payload: { command: "get-profile", commandPayload: [{...}] }
               └→ ServiceApiController
                     └→ AbstractCommandService.handleRequest()
                           ├→ 认证(NSkitAuthorizationFilter)
@@ -78,7 +79,7 @@ Frontend (nskit-api.js)
                           └→ 反射调用 UserCommandService.getProfile(ctx)
 ```
 
-认证 **只在过滤器层执行一次**,所有端点都得到保证。不存在「忘记加 `@PreAuthorize`」的余地。
+认证(是否登录)由框架保证,按 `@CommandHandler` 的声明在方法执行前强制执行。授权(是否本人数据、是否管理员)在命令内显式判定。仅靠 `/admin/` 之类的路径前缀什么也保护不了。
 
 ---
 
@@ -87,21 +88,9 @@ Frontend (nskit-api.js)
 | 方面 | 传统 REST | CommandHandler |
 |---|---|---|
 | 新增端点 | 改 5 个文件 | 在一个文件里加一个方法 |
-| 认证保证 | 分散 | 过滤器层统一 |
+| 认证保证 | 分散 | 注解统一(授权在命令内显式判定) |
 | 理解所需阅读 | 控制器 + 服务 + 安全 + DTO | 一个 Service 类 |
 | 重构影响 | 影响范围不明 | 在一个类内收敛 |
-
----
-
-## 实际规模
-
-NSKit 运行中 B2B 服务的数据:
-
-| 项目 | 模块数 | 命令数(估算) | 运营时长 |
-|---|---|---|---|
-| GosuSchool | 12 | 180+ | 1 年以上 |
-| NewMyoung | 15 | 200+ | 运行中 |
-| Prism、Chicver、Haru | 各 8-10 | 各 100+ | 运行中 |
 
 ---
 

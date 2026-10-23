@@ -4,7 +4,7 @@
 
 **API 메서드 이름이 곧 API 스펙이라면?**
 
-> [**NSKit**](https://github.com/nskit-io/nskit-io) 프로덕션 서비스의 백엔드 패턴 — *갇혀 있어서 무한 조합*. 운영 중인 모든 B2B 서비스(GosuSchool, NewMyoung, Prism, Chicver, Haru, BigFoot)가 이 패턴으로 돌아갑니다.
+> [**NSKit**](https://github.com/nskit-io/nskit-io) 프로덕션 서비스의 백엔드 패턴 — *갇혀 있어서 무한 조합*. 운영 중인 NSKit 서비스(NewMyoung, Pellow, Byeol, SING:ON, BigFoot 등)가 모두 이 패턴으로 돌아갑니다.
 
 > 모듈 1개 = 서비스 클래스 1개. 커맨드 1개 = 메서드 1개. 메서드 이름이 곧 API 스펙.
 
@@ -102,7 +102,7 @@ public class UserCommandService extends AbstractCommandService {
 
 ### 단계별 설명:
 
-1. **클라이언트가 POST** 요청을 `/api/v1/user`로 전송: `{"command": "get-profile", "commandPayload": [{"uid": "123"}]}`
+1. **클라이언트가 POST** 요청을 `/api/v1/user`로 전송: `{"command": "get-profile", "commandPayload": [{}]}` (호출자 신원은 payload 가 아니라 인증 토큰에서 온다)
 2. **Front 서버가 프록시** -- API 서버로 전달 (Frontend는 절대 DB에 접근하지 않음)
 3. **ServiceApiController**가 URL 경로 `/user`를 `UserCommandService.class`로 매핑
 4. **AbstractCommandService**가 처리:
@@ -148,21 +148,18 @@ public ResponseVO getProductDetail(CommandContext ctx) {
     Map<String, Object> result = new HashMap<>();
     result.put("product", product);
     
-    // payload에 uid가 있으면, DB 조회 후 개인화 데이터 append
-    String uid = payload.has("uid") ? payload.get("uid").getAsString() : null;
-    if (uid != null) {
-        UserVO user = userService.getUserByUid(uid);
-        if (user != null) {
-            result.put("liked", likeService.isLiked(uid, product.getId()));
-            result.put("recentView", viewService.getRecent(uid));
-        }
+    // 개인화는 인증된 신원으로 -- payload 의 uid 로 하지 않는다.
+    UserVO me = ctx.getUser();  // 게스트면 null
+    if (me != null) {
+        result.put("liked", likeService.isLiked(me.getUid(), product.getId()));
+        result.put("recentView", viewService.getRecent(me.getUid()));
     }
     
     return ResponseHelper.response(200, "Success", result);
 }
 ```
 
-패턴: **기본 응답은 모든 사용자에게 제공하고, payload에 uid가 포함되면 DB 조회 후 사용자별 데이터를 append.** 로그인 없이 탐색은 가능하면서, 알려진 사용자에게는 풍부한 경험을 제공합니다.
+패턴: **기본 응답은 모든 사용자에게 제공하고, 인증된 사용자에게만 그 사용자의 데이터를 append.** 로그인 없이 탐색은 가능하면서, 회원에게는 풍부한 경험을 제공합니다. 대상 신원을 payload 에서 받지 않습니다 -- payload 는 클라이언트가 정하는 값이라, 게스트가 남의 uid 를 넣어 그 사람의 데이터를 읽을 수 있게 됩니다.
 
 **레벨 3: 공개**
 ```java
@@ -234,7 +231,7 @@ AI가 한 번 배우면 모든 모듈, 모든 프로젝트에 적용합니다.
 
 ## 실제 운영 규모
 
-이 패턴은 이론이 아닙니다. [NSKit](https://nskit.io) 프레임워크 기반으로 [네올소프트](https://neoulsoft.com)의 10개 이상 프로덕션 프로젝트에서 사용 중입니다.
+이 패턴은 이론이 아닙니다. [NSKit](https://nskit.io) 프레임워크 기반으로 [너울소프트](https://neoulsoft.com)의 10개 이상 프로덕션 프로젝트에서 사용 중입니다.
 
 | 지표 | 값 |
 |---|---|
@@ -242,7 +239,7 @@ AI가 한 번 배우면 모든 모듈, 모든 프로젝트에 적용합니다.
 | 가장 큰 프로젝트 (서비스당 커맨드 수) | 15-20 메서드 |
 | AI와 함께한 평균 커맨드 구현 시간 | 3-5분 |
 | 일반적인 CommandService 파일 크기 | 200-500줄 |
-| 도입 후 인증 관련 버그 | 거의 제로 (프레임워크가 보장) |
+| 인증 보장 | 인증(로그인 여부)은 어노테이션이 강제, 인가(본인 데이터인가·관리자인가)는 커맨드 안에서 명시적으로 판정 (`requireAdmin`, 소유자 확인) |
 
 패턴은 모듈 추가(더 많은 CommandService 클래스)로 확장되지, 기존 모듈의 복잡도를 높이는 방식이 아닙니다. 각 서비스는 자신의 비즈니스 도메인에 집중합니다.
 

@@ -4,7 +4,7 @@
 
 **What if your API method name WAS the API spec?**
 
-> Used by [**NSKit**](https://github.com/nskit-io/nskit-io) — *bound by structure, free to combine.* A production web-app platform where CommandHandler backs every B2B service in operation (GosuSchool, NewMyoung, Prism, Chicver, Haru, BigFoot).
+> Used by [**NSKit**](https://github.com/nskit-io/nskit-io) — *bound by structure, free to combine.* A production web-app platform where CommandHandler backs every NSKit service in operation (NewMyoung, Pellow, Byeol, SING:ON, BigFoot, and others).
 
 > One module = one service class. One command = one method. The method name IS the API spec.
 
@@ -105,7 +105,7 @@ public class UserCommandService extends AbstractCommandService {
 
 ### Step by step:
 
-1. **Client sends a POST** to `/api/v1/user` with `{"command": "get-profile", "commandPayload": [{"uid": "123"}]}`
+1. **Client sends a POST** to `/api/v1/user` with `{"command": "get-profile", "commandPayload": [{}]}` (the caller's identity comes from the auth token, not the payload)
 2. **Front Server proxies** the request to the API server (Frontend never touches the database)
 3. **ServiceApiController** maps the URL path `/user` to `UserCommandService.class`
 4. **AbstractCommandService** takes over:
@@ -142,6 +142,8 @@ public class ServiceApiController {
 
 One line per module. The ServiceApiController is the only routing configuration in the entire application.
 
+A path prefix is not a gate: `/admin/...` routes protect nothing by themselves. Admin commands check the role explicitly (e.g. `requireAdmin(ctx)`) inside the command.
+
 ---
 
 ## The Auth Guarantee
@@ -176,21 +178,18 @@ public ResponseVO getProductDetail(CommandContext ctx) {
     Map<String, Object> result = new HashMap<>();
     result.put("product", product);
     
-    // If user info is available (via payload uid), append personalized data
-    String uid = payload.has("uid") ? payload.get("uid").getAsString() : null;
-    if (uid != null) {
-        UserVO user = userService.getUserByUid(uid);
-        if (user != null) {
-            result.put("liked", likeService.isLiked(uid, product.getId()));
-            result.put("recentView", viewService.getRecent(uid));
-        }
+    // Personalize from the authenticated identity -- never from the payload.
+    UserVO me = ctx.getUser();  // null for guests
+    if (me != null) {
+        result.put("liked", likeService.isLiked(me.getUid(), product.getId()));
+        result.put("recentView", viewService.getRecent(me.getUid()));
     }
     
     return ResponseHelper.response(200, "Success", result);
 }
 ```
 
-The pattern: **base response for everyone, then append user-specific data if uid is provided in the payload.** This avoids requiring login for browsing while still enriching the experience for known users.
+The pattern: **base response for everyone, then append data for the authenticated user.** This avoids requiring login for browsing while still enriching the experience for members. Never take the subject identity from the payload -- the payload is client-controlled, so a guest could pass someone else's uid and read their data.
 
 **Level 3: Public**
 ```java
@@ -296,7 +295,7 @@ This pattern is not theoretical. It powers 10+ production projects at [Neoulsoft
 | Largest project (commands per service) | 15-20 methods |
 | Average command implementation time (with AI) | 3-5 minutes |
 | Typical CommandService file | 200-500 lines |
-| Auth-related bugs since adoption | Near zero (guaranteed by framework) |
+| Auth guarantee | Authentication enforced by the annotation; authorization (ownership, admin role) is checked explicitly in the command (`requireAdmin`, owner checks) |
 
 The pattern scales by adding modules (more CommandService classes), not by adding complexity to existing ones. Each service stays focused on its business domain.
 

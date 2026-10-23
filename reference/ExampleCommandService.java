@@ -111,7 +111,7 @@ public class ExampleCommandService extends AbstractCommandService {
      * <pre>{@code
      * // Client request (guest or member):
      * POST /api/v1/user
-     * { "command": "get-public-info", "commandPayload": [{ "targetUid": "abc" }] }
+     * { "command": "get-public-info", "commandPayload": [{}] }
      * }</pre>
      */
     @CommandHandler(allowGuest = true)

@@ -6,7 +6,7 @@
 
 > 1モジュール = 1サービスクラス。1コマンド = 1メソッド。メソッド名がすなわち API 仕様。
 
-> [**NSKit**](https://github.com/nskit-io/nskit-io) プロダクション・サービスで使用中 — *型にはまっているから、無限に組み合わせられる*。運用中の全 B2B サービス(GosuSchool、NewMyoung、Prism、Chicver、Haru、BigFoot)がこのパターンで動いています。
+> [**NSKit**](https://github.com/nskit-io/nskit-io) プロダクション・サービスで使用中 — *型にはまっているから、無限に組み合わせられる*。運用中の NSKit サービス(NewMyoung、Pellow、Byeol、SING:ON、BigFoot など)はすべてこのパターンで動いています。
 
 ---
 
@@ -44,15 +44,16 @@ AI が主要な協業者になると問題が顕在化:
 ## CommandHandler の解
 
 ```java
-@CommandHandler(module = "user")
-public class UserCommandService {
+public class UserCommandService extends AbstractCommandService {
 
+    @CommandHandler  // needAuth=true, allowGuest=false
     public ResponseVO getProfile(CommandContext ctx) throws HandledServiceException {
-        String uid = ctx.getFirstCommandPayload().get("uid").getAsString();
+        String uid = ctx.getUser().getUid();  // 本人の識別はペイロードではなく認証トークンから
         // ...
         return ResponseHelper.response(200, "Success", profile);
     }
 
+    @CommandHandler
     public ResponseVO updateProfile(CommandContext ctx) throws HandledServiceException {
         // ...
     }
@@ -70,7 +71,7 @@ URL は1本のみ: `POST /api/v1/user`。ペイロードの `command` フィー�
 ```
 Frontend (nskit-api.js)
   └→ POST /api/v1/{module}
-         payload: { command: "getProfile", payload: {...} }
+         payload: { command: "get-profile", commandPayload: [{...}] }
               └→ ServiceApiController
                     └→ AbstractCommandService.handleRequest()
                           ├→ 認証(NSkitAuthorizationFilter)
@@ -78,7 +79,7 @@ Frontend (nskit-api.js)
                           └→ reflection で UserCommandService.getProfile(ctx) 呼び出し
 ```
 
-認証は **フィルター層で1回だけ** 実施され、すべてのエンドポイントで保証されます。`@PreAuthorize` を書き忘れる余地がない。
+認証(ログイン有無)はフレームワークが保証し、`@CommandHandler` の宣言どおりにメソッド実行前に強制されます。認可(本人のデータか・管理者か)はコマンド内で明示的に判定します。`/admin/` のようなパス接頭辞だけでは何も守られません。
 
 ---
 
@@ -87,21 +88,9 @@ Frontend (nskit-api.js)
 | 側面 | 従来 REST | CommandHandler |
 |---|---|---|
 | エンドポイント追加 | 5 ファイル修正 | 1 ファイルに1メソッド追加 |
-| 認証保証 | バラバラ | フィルター層で統一 |
+| 認証保証 | バラバラ | アノテーションで統一(認可はコマンド内で明示) |
 | 理解に必要な読み込み | コントローラ + サービス + セキュリティ + DTO | 1つの Service クラス |
 | リファクタ影響 | 影響範囲不明 | 1 クラス内で完結 |
-
----
-
-## 実スケール
-
-NSKit 運用中の B2B サービスの実績:
-
-| プロジェクト | モジュール数 | コマンド数(推定) | 運用期間 |
-|---|---|---|---|
-| GosuSchool | 12 | 180+ | 1年以上 |
-| NewMyoung | 15 | 200+ | 運用中 |
-| Prism、Chicver、Haru | 各 8-10 | 各 100+ | 運用中 |
 
 ---
 
