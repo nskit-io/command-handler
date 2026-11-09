@@ -87,7 +87,7 @@ Frontend (nskit-api.js)
 
 | 方面 | 传统 REST | CommandHandler |
 |---|---|---|
-| 新增端点 | 改 5 个文件 | 在一个文件里加一个方法 |
+| 新增端点 | 改多个文件(URL、安全配置、DTO、服务) | 在一个文件里加一个方法 |
 | 认证保证 | 分散 | 注解统一(授权在命令内显式判定) |
 | 理解所需阅读 | 控制器 + 服务 + 安全 + DTO | 一个 Service 类 |
 | 重构影响 | 影响范围不明 | 在一个类内收敛 |
@@ -96,7 +96,7 @@ Frontend (nskit-api.js)
 
 ## 参考代码
 
-完整技术内容、认证保证详情、payload 示例、基准测试、参考实现请查看英文版: **[README (English)](README.md)**
+完整技术内容、认证保证详情、payload 示例、实际运行规模、参考实现请查看英文版: **[README (English)](README.md)**
 
 ---
 

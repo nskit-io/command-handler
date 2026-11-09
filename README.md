@@ -287,13 +287,13 @@ The pattern's value is in the **dispatch and auth guarantee**, not in the HTTP s
 
 ## Real-World Scale
 
-This pattern is not theoretical. It powers 10+ production projects at [Neoulsoft](https://neoulsoft.com), built on the [NSKit](https://nskit.io) framework.
+This pattern is not theoretical. It powers 10+ production projects at [Neoulsoft Inc.](https://neoulsoft.com), built on the [NSKit](https://nskit.io) framework.
 
 | Metric | Value |
 |---|---|
 | Production projects using this pattern | 10+ |
 | Largest project (commands per service) | 15-20 methods |
-| Average command implementation time (with AI) | 3-5 minutes |
+| Average command implementation time (with AI) | ~3-5 minutes (our estimate, not a measured benchmark) |
 | Typical CommandService file | 200-500 lines |
 | Auth guarantee | Authentication enforced by the annotation; authorization (ownership, admin role) is checked explicitly in the command (`requireAdmin`, owner checks) |
 
