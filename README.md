@@ -331,6 +331,8 @@ These are reference implementations intended to illustrate the pattern. They use
 
 [MIT](LICENSE)
 
+> This repository publishes the design pattern and reference material under the MIT License. The NSKit framework itself (runtime, scaffolding, checkers and operating standards) is proprietary to Neoulsoft Inc. and available under a separate commercial license.
+
 ---
 
 <p align="center">
